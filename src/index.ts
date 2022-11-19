@@ -3,7 +3,7 @@ import puppeteer from "puppeteer";
 (async () => {
   const browser = await puppeteer.launch({
     headless: true,
-    //  slowMo: 250
+    // slowMo: 250,
   });
   const page = await browser.newPage();
   await page.goto("https://developers.google.com/web/");
@@ -17,6 +17,9 @@ import puppeteer from "puppeteer";
   const resultsSelector = ".gsc-results .gs-title";
   await page.waitForSelector(resultsSelector);
   // Extract the results from the page.
+
+  // page.$$eval()
+  // page.$eval()
 
   const links = await page.evaluate((resultsSelector: any) => {
     return [...Array.from(document.querySelectorAll(resultsSelector))].map(
