@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer";
 
 (async () => {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
   await page.goto("https://developers.google.com/web/");
   // Type into search box.
