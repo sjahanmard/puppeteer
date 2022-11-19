@@ -1,46 +1,58 @@
 import puppeteer from "puppeteer";
+import { configs } from "./configs";
 
-(async () => {
-  const browser = await puppeteer.launch({
-    headless: true,
-    // slowMo: 250,
-  });
-  const page = await browser.newPage();
-  await page.goto("https://developers.google.com/web/");
-  // Type into search box.
-  await page.type(".devsite-search-field", "Headless Chrome");
-  // Wait for suggest overlay to appear and click "show all results".
-  const allResultsSelector = ".devsite-suggest-all-results";
-  await page.waitForSelector(allResultsSelector);
-  await page.click(allResultsSelector);
-  // Wait for the results page to load and display the results.
-  const resultsSelector = ".gsc-results .gs-title";
-  await page.waitForSelector(resultsSelector);
-  // Extract the results from the page.
+(async function () {
+  const browser = await puppeteer.launch({ headless: false, slowMo: 200 });
+  const firstPage = await browser.newPage();
+  await firstPage.setCookie(...(configs.cookies as any));
+  await firstPage.goto(configs.url);
 
-  // page.$$eval()
-  // page.$eval()
+  async function startPage(mainPage: puppeteer.Page) {
+    const pageTarget = mainPage.target();
+    const anchorSelector = ".c-jobListView__itemControls a";
+    await mainPage.waitForSelector(anchorSelector);
+    const anchorTagsArray: any = await mainPage.evaluate((anchorSelector) => {
+      return Array.from(document.querySelectorAll(anchorSelector));
+    }, anchorSelector);
 
-  const links = await page.evaluate((resultsSelector: any) => {
-    return [...Array.from(document.querySelectorAll(resultsSelector))].map(
-      (anchor: any) => {
-        const title = anchor?.textContent.split("|")[0].trim();
-        return `${title} - ${anchor?.href}`;
-      }
-    );
-  }, resultsSelector);
-  // Print all the files.
-  console.log(links.join("\n\n"));
+    for (let i = 0; i < anchorTagsArray.length; i++) {
+      await mainPage.$$eval(
+        anchorSelector,
+        (anchorTags, i) => {
+          const anchorTag = anchorTags[i] as HTMLAnchorElement;
+          anchorTag.click();
+        },
+        i
+      );
+      const newTarget = await browser.waitForTarget(
+        (target) => target.opener() === pageTarget
+      );
+      const newPage = await newTarget.page();
+      if (!newPage) return;
+      const buttonSendSelector = "form input[type='submit']";
+      await newPage.waitForSelector(buttonSendSelector);
+      await newPage.click(buttonSendSelector);
+      // const buttonOkSelector = "button.js-confirmOK']";
+      // await newPage.waitForSelector(buttonOkSelector);
+      // await newPage.click(buttonOkSelector);
+      // await newPage.waitForNavigation();
+      newPage && (await newPage.close());
+    }
+    const nextSelector = "li a[rel='next']";
+    const nextButton = await mainPage.evaluate((nextSelector) => {
+      let nextBtn = document.querySelector(
+        nextSelector
+      ) as HTMLAnchorElement | null;
+      nextBtn && nextBtn.click();
+      return nextBtn;
+    }, nextSelector);
+
+    console.log(nextButton, mainPage);
+    nextButton && (await mainPage.waitForNavigation());
+    nextButton && (await startPage(mainPage));
+  }
+
+  await startPage(firstPage);
+
   await browser.close();
 })();
-
-// const url =
-//   "https://montmovie.co/category/4/%D8%B3%D8%B1%DB%8C%D8%A7%D9%84-%D8%B3%D8%B1%DB%8C%D8%A7%D9%84-%D8%AE%D8%A7%D8%B1%D8%AC%DB%8C/";
-// async function run() {
-//   const browser = await puppeteer.launch();
-//   const page = await browser.newPage();
-//   await page.goto(url);
-//   await page.screenshot({ path: "screenshot.png" });
-//   browser.close();
-// }
-// run();
