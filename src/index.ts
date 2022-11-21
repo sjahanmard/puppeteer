@@ -32,10 +32,10 @@ import { configs } from "./configs";
       const buttonSendSelector = "form input[type='submit']";
       await newPage.waitForSelector(buttonSendSelector);
       await newPage.click(buttonSendSelector);
-      // const buttonOkSelector = "button.js-confirmOK']";
-      // await newPage.waitForSelector(buttonOkSelector);
-      // await newPage.click(buttonOkSelector);
-      // await newPage.waitForNavigation();
+      const buttonOkSelector = "button.js-confirmOK']";
+      await newPage.waitForSelector(buttonOkSelector);
+      await newPage.click(buttonOkSelector);
+      await newPage.waitForNavigation();
       newPage && (await newPage.close());
     }
     const nextSelector = "li a[rel='next']";
